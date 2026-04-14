@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useMutation } from '@apollo/client'
 import { ROLES } from '../utils/constants'
+import { useAuth } from '../context/AuthContext'
+import { LOGIN_MUTATION } from '../../services/graphql/mutation/Login'
 import { ShieldCheck, Building2, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react'
 
 const ROLE_CARDS = [
@@ -42,6 +45,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   // Prefill remembered email
   useEffect(() => {
@@ -49,12 +53,37 @@ export default function Login() {
     if (saved) { setEmail(saved); setRememberMe(true) }
   }, [])
 
-  const [loading, setLoading] = useState(false)
+  const [loginMutation, { loading }] = useMutation(LOGIN_MUTATION)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (selectedRole === ROLES.SUPER_ADMIN) navigate('/superadmin/dashboard')
-    else navigate('/districtadmin/dashboard')
+    setError('')
+    if (!email.trim() || !password.trim()) {
+      setError('Email and password are required')
+      return
+    }
+    try {
+      const { data } = await loginMutation({ variables: { email: email.trim(), password } })
+      const result = data?.Login
+      if (!result?.success) {
+        setError(result?.message || 'Login failed')
+        return
+      }
+      if (rememberMe) localStorage.setItem('gm_remembered_email', email.trim())
+      else localStorage.removeItem('gm_remembered_email')
+      login(result.token, {
+        id: result.id,
+        name: result.name,
+        email: result.email,
+        role: result.role,
+        mobile_number: result.mobile_number,
+      })
+      if (result.role === ROLES.SUPER_ADMIN) navigate('/superadmin/dashboard')
+      else if (result.role === ROLES.DISTRICT_ADMIN) navigate('/districtadmin/dashboard')
+      else setError('Unauthorized role')
+    } catch (err) {
+      setError(err.message || 'Something went wrong')
+    }
   }
 
   const activeCard = ROLE_CARDS.find(c => c.role === selectedRole)
