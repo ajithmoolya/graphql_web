@@ -1,0 +1,35 @@
+{
+  "name": "gm-web-portal",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "codegen": "graphql-codegen --config codegen.ts"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.11.0",
+    "graphql": "^16.9.0",
+    "lucide-react": "^0.441.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.1",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "6.3.0",
+    "@graphql-codegen/client-preset": "5.3.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.45",
+    "tailwindcss": "^3.4.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.2",
+    "vite": "^5.4.2",
+    "@graphql-codegen/introspection": "5.0.2"
+  }
+}
