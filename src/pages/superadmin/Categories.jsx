@@ -3,26 +3,15 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import Modal from '../../components/common/Modal'
 import ConfirmDialog from '../../components/common/ConfirmDialog'
 import { Plus, Pencil, Trash2, Tags } from 'lucide-react'
+import { useCategories } from '../../hooks'
 
 export default function SACategories() {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const refetch = () => {}
+  const { categories, loading, error, refetch, createCategory, creating, updateCategory, updating, deleteCategory, deleting } = useCategories()
   const [createModal, setCreateModal] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [form, setForm] = useState({ name: '', description: '' })
   const [formError, setFormError] = useState('')
-
-  const [creating, setCreating] = useState(false)
-  const createCategory = async ({ variables }) => {}
-
-  const [updating, setUpdating] = useState(false)
-  const updateCategory = async ({ variables }) => {}
-
-  const [deleting, setDeleting] = useState(false)
-  const deleteCategory = async ({ variables }) => {}
 
   const openEdit = (cat) => {
     setEditTarget(cat)
@@ -30,19 +19,33 @@ export default function SACategories() {
     setFormError('')
   }
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault()
+    setFormError('')
     if (!form.name.trim()) { setFormError('Name is required'); return }
-    createCategory({ variables: { name: form.name.trim(), description: form.description.trim() || undefined } })
+    try {
+      await createCategory({ variables: { name: form.name.trim(), description: form.description.trim() || undefined } })
+      setCreateModal(false)
+      setForm({ name: '', description: '' })
+      refetch && refetch()
+    } catch (err) {
+      setFormError(err.message || 'Failed to create category')
+    }
   }
 
-  const handleUpdate = (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault()
     if (!form.name.trim()) { setFormError('Name is required'); return }
-    updateCategory({ variables: { id: editTarget.id, name: form.name.trim(), description: form.description.trim() || undefined } })
+    try {
+      await updateCategory({ variables: { updateCategoryId: editTarget.id, name: form.name.trim(), description: form.description.trim() || undefined } })
+      setEditTarget(null)
+      refetch && refetch()
+    } catch (err) {
+      setFormError(err.message || 'Failed to update category')
+    }
   }
 
-  const categories = data?.getCategories || []
+  // categories comes directly from useCategories()
 
   return (
     <div className="space-y-6">
@@ -131,7 +134,16 @@ export default function SACategories() {
       <ConfirmDialog
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={() => deleteCategory({ variables: { id: deleteTarget.id } })}
+        onConfirm={async () => {
+          try {
+            await deleteCategory({ variables: { deleteCategoryId: deleteTarget.id } })
+            refetch && refetch()
+            setDeleteTarget(null)
+          } catch (err) {
+            // keep the dialog open and show error via formError
+            setFormError(err.message || 'Failed to delete category')
+          }
+        }}
         title="Delete Category"
         message={`Are you sure you want to delete "${deleteTarget?.name}"? This cannot be undone.`}
         loading={deleting}

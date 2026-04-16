@@ -3,27 +3,62 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ConfirmDialog from '../../components/common/ConfirmDialog'
 import { RoleBadge } from '../../components/common/Badge'
 import { Search, Ban, Trash2, UserCheck2 } from 'lucide-react'
+import { useUsers } from '../../hooks'
+import { useGetalluserQuery } from '../../../services/graphql/__generated__/operations'
+import { ROLES } from '../../utils/constants'
+import { useMutation } from '@apollo/client'
+import UpdateUser from '../../../services/graphql/mutation/UpdateUser'
+import DeleteUser from '../../../services/graphql/mutation/DeleteUser'
 
 export default function SAUsers() {
   const [search, setSearch] = useState('')
   const [actionTarget, setActionTarget] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
 
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const refetch = () => {}
+  const [roleFilter, setRoleFilter] = useState(ROLES.CITIZEN)
+  const { data, loading, error, refetch } = useGetalluserQuery({ variables: { role: roleFilter || undefined } })
+  const users = data?.getalluser || []
 
   const [blocking, setBlocking] = useState(false)
-  const blockCitizen = async ({ variables }) => {}
+  const [runUpdateUser] = useMutation(UpdateUser)
+  const blockCitizen = async () => {
+    if (!actionTarget) return
+    setBlocking(true)
+    try {
+      // toggle active (backend uses `active` boolean)
+      await runUpdateUser({ variables: { updateUserId: actionTarget.id, active: !actionTarget.active } })
+      refetch()
+      setActionTarget(null)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setBlocking(false)
+    }
+  }
 
   const [deleting, setDeleting] = useState(false)
-  const softDeleteUser = async ({ variables }) => {}
+  const [runDeleteUser] = useMutation(DeleteUser)
+  const softDeleteUser = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await runDeleteUser({ variables: { deleteUserId: deleteTarget.id } })
+      refetch()
+      setDeleteTarget(null)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setDeleting(false)
+    }
+  }
 
-  const users = (data?.getUsersByRole || []).filter(u =>
-    !search || u.name?.toLowerCase().includes(search.toLowerCase()) ||
-    u.mobile_number?.includes(search) || u.email?.toLowerCase().includes(search.toLowerCase())
-  )
+  const usersFiltered = (users || [])
+    .filter(u => (roleFilter ? u.role === roleFilter : true))
+    .filter(u => u.name?.toLowerCase() !== 'superadmin')
+    .filter(u =>
+      !search || u.name?.toLowerCase().includes(search.toLowerCase()) ||
+      u.mobile_number?.includes(search) || u.email?.toLowerCase().includes(search.toLowerCase())
+    )
 
   return (
     <div className="space-y-6">
@@ -32,14 +67,24 @@ export default function SAUsers() {
           <h1 className="text-xl font-bold text-gray-900">Citizens</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage registered citizens</p>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            className="input pl-9 w-64"
-            placeholder="Search by name, mobile…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex items-center gap-3">
+          <select className="input w-44" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+            <option value="">All roles</option>
+            <option value={ROLES.CITIZEN}>Citizen</option>
+            <option value={ROLES.DISTRICT_ADMIN}>District Admin</option>
+            <option value={ROLES.GRIEVANCE_OFFICER}>Grievance Officer</option>
+            <option value={ROLES.STAFF}>Staff</option>
+            <option value={ROLES.SUPER_ADMIN}>Super Admin</option>
+          </select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              className="input pl-9 w-64"
+              placeholder="Search by name, mobile…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
@@ -61,32 +106,32 @@ export default function SAUsers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {users.length === 0 && (
-                  <tr><td colSpan={6} className="text-center py-10 text-gray-400 text-sm">No citizens found</td></tr>
+                {usersFiltered.length === 0 && (
+                  <tr><td colSpan={6} className="text-center py-10 text-gray-400 text-sm">No users found</td></tr>
                 )}
-                {users.map((u) => (
+                {usersFiltered.map((u) => (
                   <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-900">{u.name}</td>
                     <td className="px-4 py-3 text-gray-600">{u.mobile_number}</td>
                     <td className="px-4 py-3 text-gray-600">{u.email || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{u.district || '—'}</td>
-                    <td className="px-4 py-3">
-                      {u.isBlocked ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Blocked</span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
-                      )}
-                    </td>
+                                    <td className="px-4 py-3">
+                                      {u.active === false ? (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Blocked</span>
+                                      ) : (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                                      )}
+                                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => setActionTarget(u)}
-                          className={`p-1.5 rounded-lg transition-colors ${u.isBlocked
+                          className={`p-1.5 rounded-lg transition-colors ${u.active === false
                             ? 'text-green-600 hover:bg-green-50'
                             : 'text-orange-500 hover:bg-orange-50'}`}
-                          title={u.isBlocked ? 'Unblock' : 'Block'}
+                          title={u.active === false ? 'Unblock' : 'Block'}
                         >
-                          {u.isBlocked ? <UserCheck2 className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+                          {u.active === false ? <UserCheck2 className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
                         </button>
                         <button
                           onClick={() => setDeleteTarget(u)}

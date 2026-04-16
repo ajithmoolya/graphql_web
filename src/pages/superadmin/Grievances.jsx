@@ -4,6 +4,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/Badge'
 import { STATUS_LIST } from '../../utils/constants'
 import { Search, ChevronRight, Filter } from 'lucide-react'
+import { useGrievances } from '../../hooks'
 
 export default function SAGrievances() {
   const [search, setSearch] = useState('')
@@ -12,11 +13,9 @@ export default function SAGrievances() {
   const navigate = useNavigate()
   const limit = 20
 
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const { grievances: allGrievances, loading, error, refetch } = useGrievances()
 
-  const grievances = (data?.getGrievances || []).filter(g =>
+  const grievances = (allGrievances || []).filter(g =>
     !search ||
     g.title?.toLowerCase().includes(search.toLowerCase()) ||
     g.district?.toLowerCase().includes(search.toLowerCase()) ||

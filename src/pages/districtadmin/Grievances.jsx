@@ -4,6 +4,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/Badge'
 import { STATUS_LIST } from '../../utils/constants'
 import { Search, Filter, ChevronRight, AlertTriangle } from 'lucide-react'
+import { useGrievances } from '../../hooks'
 
 export default function DAGrievances() {
   const user = null
@@ -13,14 +14,11 @@ export default function DAGrievances() {
   const [page, setPage] = useState(1)
   const limit = 20
 
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const refetch = () => {}
+  const { grievances: allGrievances, loading, error, refetch } = useGrievances()
 
   const resolveGrievance = async ({ variables }) => {}
 
-  const grievances = (data?.getGrievances || []).filter(g =>
+  const grievances = (allGrievances || []).filter(g =>
     !search ||
     g.title?.toLowerCase().includes(search.toLowerCase()) ||
     g.category?.toLowerCase().includes(search.toLowerCase())

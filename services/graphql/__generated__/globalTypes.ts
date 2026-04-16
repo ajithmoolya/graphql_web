@@ -22,6 +22,22 @@ export type Category = {
   name: Scalars['String']['output'];
 };
 
+export type DashboardStats = {
+  __typename?: 'DashboardStats';
+  assigned?: Maybe<Scalars['Int']['output']>;
+  averageOfficerRating?: Maybe<Scalars['Float']['output']>;
+  closed?: Maybe<Scalars['Int']['output']>;
+  escalated?: Maybe<Scalars['Int']['output']>;
+  inProgress?: Maybe<Scalars['Int']['output']>;
+  rejected?: Maybe<Scalars['Int']['output']>;
+  resolved?: Maybe<Scalars['Int']['output']>;
+  submitted?: Maybe<Scalars['Int']['output']>;
+  totalCitizens?: Maybe<Scalars['Int']['output']>;
+  totalGrievances?: Maybe<Scalars['Int']['output']>;
+  totalOfficers?: Maybe<Scalars['Int']['output']>;
+  totalStaff?: Maybe<Scalars['Int']['output']>;
+};
+
 export type District = {
   __typename?: 'District';
   district_code: Scalars['String']['output'];
@@ -34,9 +50,13 @@ export type Mutation = {
   CreateCategory: Category;
   CreateGrievance: Grievnace;
   DeleteCategory: Category;
+  DeleteUser: User;
   Login: WebLoginResponse;
+  UpdateCategory: Category;
+  UpdateUser: User;
   addDistrictAdmin: RegisterResponse;
-  registerStaff: RegisterResponse;
+  register: RegisterResponse;
+  registerSuperAdmin: RegisterResponse;
   requestLoginOtp: OtpResponse;
   selfRegister: RegisterResponse;
   staffLogin: StaffLoginResponse;
@@ -68,9 +88,33 @@ export type MutationDeleteCategoryArgs = {
 };
 
 
+export type MutationDeleteUserArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationLoginArgs = {
   email: Scalars['String']['input'];
   password: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateCategoryArgs = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationUpdateUserArgs = {
+  active?: InputMaybe<Scalars['Boolean']['input']>;
+  district?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  mobile_number?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  role?: InputMaybe<Scalars['String']['input']>;
+  state?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -84,12 +128,22 @@ export type MutationAddDistrictAdminArgs = {
 };
 
 
-export type MutationRegisterStaffArgs = {
+export type MutationRegisterArgs = {
+  district: Scalars['String']['input'];
   email?: InputMaybe<Scalars['String']['input']>;
   mobile_number: Scalars['String']['input'];
   name: Scalars['String']['input'];
   password?: InputMaybe<Scalars['String']['input']>;
   role: Scalars['String']['input'];
+  state: Scalars['String']['input'];
+};
+
+
+export type MutationRegisterSuperAdminArgs = {
+  email: Scalars['String']['input'];
+  mobile_number: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  password: Scalars['String']['input'];
 };
 
 
@@ -131,6 +185,7 @@ export type Query = {
   GetFieldStaff?: Maybe<Array<Maybe<User>>>;
   GetGrievance?: Maybe<Array<Maybe<Grievnace>>>;
   GetGrievanceByID?: Maybe<Array<Maybe<Grievnace>>>;
+  getDashboardStats?: Maybe<DashboardStats>;
   getDistricts?: Maybe<Array<Maybe<District>>>;
   getStates?: Maybe<Array<Maybe<State>>>;
   getalluser?: Maybe<Array<Maybe<User>>>;
@@ -138,8 +193,18 @@ export type Query = {
 };
 
 
+export type QueryGetDashboardStatsArgs = {
+  district?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type QueryGetDistrictsArgs = {
   state_code?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryGetalluserArgs = {
+  role?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type RegisterResponse = {
@@ -167,6 +232,7 @@ export type State = {
 
 export type User = {
   __typename?: 'User';
+  active?: Maybe<Scalars['Boolean']['output']>;
   district?: Maybe<Scalars['String']['output']>;
   email?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];

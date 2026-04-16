@@ -1,9 +1,9 @@
 export const ROLES = {
-  SUPER_ADMIN: 'SuperAdmin',
-  DISTRICT_ADMIN: 'DistrictAdmin',
-  GRIEVANCE_OFFICER: 'GrievanceOfficer',
-  STAFF: 'staff',
-  CITIZEN: 'Citizen',
+  SUPER_ADMIN: 'super_admin',
+  DISTRICT_ADMIN: 'district_admin',
+  GRIEVANCE_OFFICER: 'grievance_officer',
+  STAFF: 'field_staff',
+  CITIZEN: 'citizen',
 }
 
 export const GRIEVANCE_STATUSES = {

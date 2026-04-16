@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ROLES } from './utils/constants'
+import { AuthProvider } from './context/AuthContext'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Layout from './components/Layout/Layout'
@@ -9,6 +10,8 @@ import LoadingSpinner from './components/common/LoadingSpinner'
 import SADashboard from './pages/superadmin/Dashboard'
 import SACategories from './pages/superadmin/Categories'
 import SAUsers from './pages/superadmin/Users'
+import SAOfficers from './pages/superadmin/Officers'
+import SAStaff from './pages/superadmin/Staff'
 import SADistrictAdmins from './pages/superadmin/DistrictAdmins'
 import SAGrievances from './pages/superadmin/Grievances'
 import SAGrievanceDetail from './pages/superadmin/GrievanceDetail'
@@ -45,6 +48,8 @@ function AppRoutes() {
         <Route path="dashboard" element={<SADashboard />} />
         <Route path="categories" element={<SACategories />} />
         <Route path="users" element={<SAUsers />} />
+        <Route path="officers" element={<SAOfficers />} />
+        <Route path="staff" element={<SAStaff />} />
         <Route path="admins" element={<SADistrictAdmins />} />
         <Route path="grievances" element={<SAGrievances />} />
         <Route path="grievances/:id" element={<SAGrievanceDetail />} />
@@ -79,7 +84,9 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </BrowserRouter>
   )
 }

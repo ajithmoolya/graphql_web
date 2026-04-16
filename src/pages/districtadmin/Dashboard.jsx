@@ -29,12 +29,12 @@ function StatCard({ label, value, icon: Icon, color }) {
   )
 }
 
+import { useAuth } from '../../context/AuthContext'
+import { useDashboard } from '../../hooks'
+
 export default function DADashboard() {
-  const user = null
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const s = data?.getDashboardStats
+  const { user } = useAuth()
+  const { stats: s, loading, error, refetch } = useDashboard({ district: user?.district })
 
   if (loading) return <LoadingSpinner />
   if (error) return (

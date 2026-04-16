@@ -3,23 +3,47 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import Modal from '../../components/common/Modal'
 import { AvailabilityBadge } from '../../components/common/Badge'
 import { Plus, UserCog } from 'lucide-react'
+import { useCategories } from '../../hooks'
+import { useAuth } from '../../context/AuthContext'
+import { useRegister } from '../../hooks/useRegister'
+import StateDistrictSelect from '../../components/common/StateDistrictSelect'
+import { ROLES } from '../../utils/constants'
+import { useGetalluserQuery } from '../../../services/graphql/__generated__/operations'
 
 export default function DAOfficers() {
-  const user = null
+  const { user, isDistrictAdmin, isSuperAdmin } = useAuth()
   const [createModal, setCreateModal] = useState(false)
-  const [form, setForm] = useState({ name: '', mobile_number: '', email: '', state: user?.state || '', categories: [], password: '' })
+  const [form, setForm] = useState({ name: '', mobile_number: '', email: '', state: user?.state || '', district: user?.district || '', categories: [], password: '' })
   const [formError, setFormError] = useState('')
 
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const refetch = () => {}
+  const { data, loading, error, refetch } = useGetalluserQuery({ variables: { role: ROLES.GRIEVANCE_OFFICER } })
+  const [mutationError, setMutationError] = useState(null)
 
-  const [catData, setCatData] = useState(null)
-  const categories = catData?.getCategories || []
+  const { categories } = useCategories()
 
   const [creating, setCreating] = useState(false)
-  const createStaff = async ({ variables }) => {}
+  const { register } = useRegister()
+  const createStaff = async ({ variables }) => {
+    setCreating(true)
+    try {
+      const vars = {
+        name: variables.name,
+        mobileNumber: variables.mobile_number,
+        email: variables.email,
+        password: variables.password,
+        role: 'grievance_officer',
+        state: variables.state,
+        district: variables.district,
+      }
+      await register(vars)
+      await refetch()
+      setCreateModal(false)
+    } catch (err) {
+      setMutationError(err)
+    } finally {
+      setCreating(false)
+    }
+  }
 
   const handleCreate = (e) => {
     e.preventDefault()
@@ -29,12 +53,18 @@ export default function DAOfficers() {
       if (!form[f]?.trim()) { setFormError(`${f} is required`); return }
     }
     if (!form.categories.length) { setFormError('Select at least one category'); return }
+
+    // ensure state/district available (fall back to user values)
+    const state = form.state || user?.state
+    const district = form.district || user?.district
+    if (!state) { setFormError('State is required'); return }
+    if (!district) { setFormError('District is required'); return }
+
     createStaff({
       variables: {
         ...form,
-        role: 'GrievanceOfficer',
-        district: user?.district,
-        state: form.state || user?.state,
+        district,
+        state,
         email: form.email || undefined,
       },
     })
@@ -49,7 +79,7 @@ export default function DAOfficers() {
     }))
   }
 
-  const officers = data?.getUsersByRole || []
+  const officers = data?.getalluser || []
   const online = officers.filter(o => o.isAvailable).length
   const offline = officers.filter(o => !o.isAvailable).length
 
@@ -62,14 +92,16 @@ export default function DAOfficers() {
             {user?.district || 'Your district'} — {online} online, {offline} offline
           </p>
         </div>
-        <button className="btn-primary flex items-center gap-2" onClick={() => { setCreateModal(true); setFormError('') }}>
-          <Plus className="h-4 w-4" />
-          Add Officer
-        </button>
+        {(isDistrictAdmin() || isSuperAdmin()) && (
+          <button className="btn-primary flex items-center gap-2" onClick={() => { setCreateModal(true); setFormError('') }}>
+            <Plus className="h-4 w-4" />
+            Add Officer
+          </button>
+        )}
       </div>
 
       {loading && <LoadingSpinner />}
-      {error && <div className="p-4 bg-red-50 rounded-lg text-red-700 text-sm">{error.message}</div>}
+      {(error || mutationError) && <div className="p-4 bg-red-50 rounded-lg text-red-700 text-sm">{(mutationError || error)?.message}</div>}
 
       {!loading && officers.length === 0 && (
         <div className="card text-center py-12">
@@ -78,30 +110,47 @@ export default function DAOfficers() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {officers.map((officer) => (
-          <div key={officer.id} className="card">
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm flex-shrink-0">
-                  {officer.name?.[0]?.toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-gray-900 truncate">{officer.name}</p>
-                  <p className="text-xs text-gray-500">{officer.mobile_number}</p>
-                </div>
-              </div>
-              <AvailabilityBadge isAvailable={officer.isAvailable} />
-            </div>
-            {officer.categories?.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {officer.categories.map(c => (
-                  <span key={c} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{c}</span>
+      <div className="bg-white shadow sm:rounded-lg">
+        <div className="px-4 py-3 sm:px-6 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-gray-900">Grievance Officers ({officers.length})</h2>
+        </div>
+        <div className="border-t border-gray-200">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">District</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categories</th>
+                  <th className="px-4 py-2" />
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {officers.map((officer) => (
+                  <tr key={officer.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm flex-shrink-0">{officer.name?.[0]?.toUpperCase()}</div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">{officer.name}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{officer.mobile_number || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{officer.email || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{officer.district || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{(officer.categories || []).join(', ') || '—'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                      <AvailabilityBadge isAvailable={officer.isAvailable} />
+                    </td>
+                  </tr>
                 ))}
-              </div>
-            )}
+              </tbody>
+            </table>
           </div>
-        ))}
+        </div>
       </div>
 
       {/* Create Modal */}
@@ -120,6 +169,14 @@ export default function DAOfficers() {
             <div>
               <label className="label">Email</label>
               <input className="input" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+            </div>
+            <div className="col-span-2">
+              <StateDistrictSelect
+                stateValue={form.state}
+                onStateChange={(code) => setForm(f => ({ ...f, state: code }))}
+                districtValue={form.district}
+                onDistrictChange={(code) => setForm(f => ({ ...f, district: code }))}
+              />
             </div>
             <div className="col-span-2">
               <label className="label">Password <span className="text-red-500">*</span></label>

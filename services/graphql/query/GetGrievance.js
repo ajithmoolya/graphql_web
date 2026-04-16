@@ -1,19 +1,19 @@
 import { gql } from '@apollo/client'
 
-export const GET_GRIEVANCE_BY_ID = gql`
-  query GetGrievanceByID($id: ID) {
-    GetGrievanceByID(id: $id) {
+export const GET_GRIEVANCE = gql`
+  query GetGrievance {
+    GetGrievance {
       id
       grievance_id
       title
       description
       category
-      status
       stateId
       districtId
+      status
+      image_data
       user_id
       assignedTo
-      image_data
       createdAt
       updatedAt
     }

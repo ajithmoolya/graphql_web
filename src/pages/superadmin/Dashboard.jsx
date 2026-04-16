@@ -33,11 +33,10 @@ function StatCard({ label, value, icon: Icon, color, sub }) {
   )
 }
 
+import { useDashboard } from '../../hooks'
+
 export default function SADashboard() {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const s = data?.getDashboardStats
+  const { stats: s, loading, error } = useDashboard()
 
   if (loading) return <LoadingSpinner />
   if (error) return (

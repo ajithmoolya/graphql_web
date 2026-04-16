@@ -10,6 +10,8 @@ const superAdminNav = [
   { to: '/superadmin/categories', icon: Tags, label: 'Categories' },
   { to: '/superadmin/users', icon: Users, label: 'Citizens' },
   { to: '/superadmin/admins', icon: Shield, label: 'District Admins' },
+  { to: '/superadmin/officers', icon: UserCog, label: 'Officers' },
+  { to: '/superadmin/staff', icon: HardHat, label: 'Field Staff' },
   { to: '/superadmin/grievances', icon: FileText, label: 'Grievances' },
   { to: '/superadmin/ratings', icon: Star, label: 'Ratings' },
   { to: '/superadmin/logs', icon: ScrollText, label: 'Activity Logs' },
