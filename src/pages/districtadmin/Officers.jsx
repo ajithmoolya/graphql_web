@@ -13,7 +13,7 @@ import { useGetalluserQuery } from '../../../services/graphql/__generated__/oper
 export default function DAOfficers() {
   const { user, isDistrictAdmin, isSuperAdmin } = useAuth()
   const [createModal, setCreateModal] = useState(false)
-  const [form, setForm] = useState({ name: '', mobile_number: '', email: '', state: user?.state || '', district: user?.district || '', categories: [], password: '' })
+  const [form, setForm] = useState({ name: '', mobile_number: '', email: '', state: user?.state || '', district: user?.district || '', categories: [] })
   const [formError, setFormError] = useState('')
 
   const { data, loading, error, refetch } = useGetalluserQuery({ variables: { role: ROLES.GRIEVANCE_OFFICER } })
@@ -25,12 +25,12 @@ export default function DAOfficers() {
   const { register } = useRegister()
   const createStaff = async ({ variables }) => {
     setCreating(true)
+    
     try {
       const vars = {
         name: variables.name,
         mobileNumber: variables.mobile_number,
         email: variables.email,
-        password: variables.password,
         role: 'grievance_officer',
         state: variables.state,
         district: variables.district,
@@ -48,7 +48,7 @@ export default function DAOfficers() {
   const handleCreate = (e) => {
     e.preventDefault()
     setFormError('')
-    const required = ['name', 'mobile_number', 'password']
+    const required = ['name', 'mobile_number']
     for (const f of required) {
       if (!form[f]?.trim()) { setFormError(`${f} is required`); return }
     }
@@ -179,8 +179,7 @@ export default function DAOfficers() {
               />
             </div>
             <div className="col-span-2">
-              <label className="label">Password <span className="text-red-500">*</span></label>
-              <input className="input" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
+              <p className="text-sm text-gray-500">Grievance officers sign in using OTP. No password required.</p>
             </div>
             <div className="col-span-2">
               <label className="label">Categories <span className="text-red-500">*</span></label>
@@ -212,3 +211,14 @@ export default function DAOfficers() {
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+

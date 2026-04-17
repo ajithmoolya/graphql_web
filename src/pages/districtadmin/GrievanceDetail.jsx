@@ -3,6 +3,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/Badge'
 import { ArrowLeft, User, MapPin, Calendar, Tag, CheckCircle, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
+import { useQuery, useMutation, gql } from '@apollo/client'
 
 function InfoRow({ label, value }) {
   return (
@@ -18,6 +19,7 @@ export default function DAGrievanceDetail() {
   const user = null
   const navigate = useNavigate()
   const [selectedOfficer, setSelectedOfficer] = useState('')
+  const [selectedStaff, setSelectedStaff] = useState('')
 
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -26,14 +28,55 @@ export default function DAGrievanceDetail() {
 
   const [officersData, setOfficersData] = useState(null)
 
+  const GET_FIELD_STAFF = gql`
+    query GetFieldStaff {
+      GetFieldStaff {
+        id
+        name
+        mobile_number
+        district
+      }
+    }
+  `
+
+  const ASSIGN_FIELD_STAFF = gql`
+    mutation AssignFieldStaff($grievanceId: ID!, $staffId: ID!, $reason: String) {
+      AssignFieldStaff(grievanceId: $grievanceId, staffId: $staffId, reason: $reason) {
+        id
+        assignedStaff
+        assignedStaffAt
+        status
+      }
+    }
+  `
+
+  const { data: fieldStaffData, loading: staffLoading } = useQuery(GET_FIELD_STAFF)
+  const [assignFieldStaffMutation] = useMutation(ASSIGN_FIELD_STAFF)
+
   const g = data?.getGrievanceById
   const officers = officersData?.getUsersByRole || []
+  const fieldStaff = fieldStaffData?.GetFieldStaff || []
 
   const [resolving, setResolving] = useState(false)
   const resolveGrievance = async ({ variables }) => {}
 
   const [assigning, setAssigning] = useState(false)
   const assignToOfficer = async ({ variables }) => {}
+
+  const assignFieldStaff = async () => {
+    if (!selectedStaff || !g) return
+    try {
+      setAssigning(true)
+      await assignFieldStaffMutation({ variables: { grievanceId: g.grievance_id, staffId: selectedStaff } })
+      // ideally refetch grievance here
+      setAssigning(false)
+      // simple page reload to refresh data if no refetch hook
+      window.location.reload()
+    } catch (err) {
+      setAssigning(false)
+      setError(err)
+    }
+  }
 
   const canResolve = g && ['Escalated', 'Assigned', 'InProgress'].includes(g.status)
   const canReassign = g && ['Escalated', 'Assigned', 'InProgress'].includes(g.status)
@@ -77,6 +120,7 @@ export default function DAGrievanceDetail() {
 
             {/* Reassign */}
             {canReassign && (
+              <>
               <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-end gap-3">
                 <div className="flex-1 min-w-0">
                   <label className="label">Re-assign to Officer</label>
@@ -102,7 +146,34 @@ export default function DAGrievanceDetail() {
                   {assigning ? 'Assigning…' : 'Reassign'}
                 </button>
               </div>
-            )}
+                {/* Assign Field Staff */}
+                <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-end gap-3">
+                  <div className="flex-1 min-w-0">
+                    <label className="label">Assign Field Staff</label>
+                    <select
+                      className="input"
+                      value={selectedStaff}
+                      onChange={e => setSelectedStaff(e.target.value)}
+                    >
+                      <option value="">Select field staff…</option>
+                      {fieldStaff.map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} — {s.district}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => assignFieldStaff()}
+                    disabled={!selectedStaff || assigning}
+                    className="btn-secondary flex items-center gap-2 text-sm"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    {assigning ? 'Assigning…' : 'Assign Field Staff'}
+                  </button>
+                </div>
+              </>
+              )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
