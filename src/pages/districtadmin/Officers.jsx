@@ -1,20 +1,24 @@
 import { useState } from 'react'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import Modal from '../../components/common/Modal'
+import ConfirmDialog from '../../components/common/ConfirmDialog'
 import { AvailabilityBadge } from '../../components/common/Badge'
-import { Plus, UserCog } from 'lucide-react'
+import { Plus, Trash2, UserCog } from 'lucide-react'
 import { useCategories } from '../../hooks'
 import { useAuth } from '../../context/AuthContext'
 import { useRegister } from '../../hooks/useRegister'
 import StateDistrictSelect from '../../components/common/StateDistrictSelect'
 import { ROLES } from '../../utils/constants'
 import { useGetalluserQuery } from '../../../services/graphql/__generated__/operations'
+import { useMutation } from '@apollo/client'
+import DeleteUser from '../../../services/graphql/mutation/DeleteUser'
 
 export default function DAOfficers() {
   const { user, isDistrictAdmin, isSuperAdmin } = useAuth()
   const [createModal, setCreateModal] = useState(false)
   const [form, setForm] = useState({ name: '', mobile_number: '', email: '', state: user?.state || '', district: user?.district || '', categories: [] })
   const [formError, setFormError] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   const { data, loading, error, refetch } = useGetalluserQuery({ variables: { role: ROLES.GRIEVANCE_OFFICER } })
   const [mutationError, setMutationError] = useState(null)
@@ -22,7 +26,9 @@ export default function DAOfficers() {
   const { categories } = useCategories()
 
   const [creating, setCreating] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const { register } = useRegister()
+  const [runDeleteUser] = useMutation(DeleteUser)
   const createStaff = async ({ variables }) => {
     setCreating(true)
     
@@ -68,6 +74,21 @@ export default function DAOfficers() {
         email: form.email || undefined,
       },
     })
+  }
+
+  const handleDeleteOfficer = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    setMutationError(null)
+    try {
+      await runDeleteUser({ variables: { deleteUserId: deleteTarget.id } })
+      await refetch()
+      setDeleteTarget(null)
+    } catch (err) {
+      setMutationError(err)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const toggleCategory = (catId) => {
@@ -143,7 +164,18 @@ export default function DAOfficers() {
                     <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{officer.district || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{(officer.categories || []).join(', ') || '—'}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                      <AvailabilityBadge isAvailable={officer.isAvailable} />
+                      <div className="flex items-center justify-end gap-2">
+                        <AvailabilityBadge isAvailable={officer.isAvailable} />
+                        {(isDistrictAdmin() || isSuperAdmin()) && (
+                          <button
+                            onClick={() => setDeleteTarget(officer)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete officer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -208,6 +240,16 @@ export default function DAOfficers() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteOfficer}
+        title="Delete Officer"
+        message={`Are you sure you want to delete ${deleteTarget?.name || 'this officer'}? This cannot be undone.`}
+        confirmLabel="Delete"
+        loading={deleting}
+      />
     </div>
   )
 }
